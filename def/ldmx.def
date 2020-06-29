@@ -23,19 +23,31 @@ Stage: buildldmx
     source /opt/rh/devtoolset-${DEVTOOLSET}/enable
   fi
 
+  #source /opt/rh/
   export XERCESC_DIR=/opt/xerces-c-$XERCES_VER
   export G4DIR=/opt/geant4-$GEANT4_TAG
   export ROOTDIR=/opt/root-$ROOTVERSION
+  if [ ${ONNX_GPU} == "ON" ]; then 
+  export ONNX_DIR=/opt/onnxruntime-linux-x64-gpu-$ONNX_VER
+  fi
+  if [ ${ONNX_GPU} == "OFF" ]; then
+  export ONNX_DIR=/opt/onnxruntime-linux-x64-$ONNX_VER
+  fi
 
   cd /buildroot
 
   # Build LDMX
-  yum -y install boost-devel numpy scipy python-pip
-  pip install xgboost==0.82
+  yum -y install boost-devel
+  source /opt/rh/rh-python36/enable bash
+  pip install xgboost==0.82  
+  pip install uproot
   mv /src/ldmx-git .
   cd ldmx-git
-  #git checkout master
+  if [ "$LDMX_TAG" != "latest" ]; then
   git checkout tags/$LDMX_TAG -b $LDMX_TAG
+  else
+  git checkout master
+  fi
   # fix Config and Detectors install
   #mkdir Configuration/{include,src}
   #mkdir Detectors/{include,src}
@@ -44,7 +56,8 @@ Stage: buildldmx
   cd build
   source /opt/root-$ROOTVERSION/bin/thisroot.sh
   export LDMXDIR=/opt/ldmx-$LDMX_TAG
-  cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=/usr/bin/python -DROOT_DIR=$ROOTDIR -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
+  #cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=/usr/bin/python -DROOT_DIR=$ROOTDIR -DONNXRUNTIME_ROOT=$ONNX_DIR -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
+  cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=/opt/rh/rh-python36/root/usr/bin/python -DROOT_DIR=$ROOTDIR -DONNXRUNTIME_ROOT=$ONNX_DIR -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
   make $MAKEOPTS
   make install
   # add marcros examples to install tree
@@ -56,10 +69,11 @@ Stage: buildldmx
   if [ "$DEVTOOLSET" != "S" ]; then
     echo "source /opt/rh/devtoolset-$DEVTOOLSET/enable" >> $LDMX_ENV_FILE
   fi
+  echo "source /opt/rh/rh-python36/enable" >> $LDMX_ENV_FILE
   echo "export LDMXSW_DIR=$LDMXDIR" >> $LDMX_ENV_FILE
   echo "source $G4DIR/bin/geant4.sh" >> $LDMX_ENV_FILE
   echo "source $ROOTDIR/bin/thisroot.sh" >> $LDMX_ENV_FILE
-  echo "export LD_LIBRARY_PATH=\$LDMXSW_DIR/lib:$XERCESC_DIR/lib:\$LD_LIBRARY_PATH" >> $LDMX_ENV_FILE
+  echo "export LD_LIBRARY_PATH=\$LDMXSW_DIR/lib:$XERCESC_DIR/lib:$ONNX_DIR/lib:\$LD_LIBRARY_PATH" >> $LDMX_ENV_FILE
   echo "export PYTHONPATH=\$LDMXSW_DIR/lib/python:\$PYTHONPATH" >> $LDMX_ENV_FILE
   echo "export PATH=\$LDMXSW_DIR/bin:\$PATH" >> $LDMX_ENV_FILE
 
@@ -79,11 +93,12 @@ Stage: deploy
   /opt/xerces* /opt/
   /opt/geant4* /opt/
   /opt/root* /opt/
+  /opt/onnxruntime* /opt/
   /opt/ldmx* /opt/
 
 %post
   source /etc/ldmx.buildvers
-  yum -y install epel-release vim-enhanced
+  yum -y install epel-release vim-enhanced boost boost-thread boost-devel
   if [ "$DEVTOOLSET" != "S" ]; then
     # complete gcc toolset is needed for runtime compilations
     yum -y install centos-release-scl-rh
@@ -94,8 +109,20 @@ Stage: deploy
   # libs
   yum -y install openssl libX11 libXmu mesa-libGL mesa-libGLU mesa-libGLw libXpm libXft libXext gsl libglvnd-opengl fftw blas boost
   # extra python
-  yum -y install numpy scipy python-pip
+  yum -y install rh-python36
+  yum -y install rh-python36-numpy rh-python36-scipy rh-python36-python-tools rh-python36-python-six rh-python36-PyYAML
+  source /opt/rh/rh-python36/enable
+  pip install uproot
+  pip install lz4
+  #pip install zstd
+  pip install xxhash
+  #pip install lzma
+  #pip install xrootd
+  pip install requests
+  pip install pandas
+  #yum -y install numpy scipy python-pip
   pip install xgboost==0.82
+  #pip install uproot
   # satisfy ldmx buildroot hardcode for runtime includes
   for d in $( ls -1 /opt/ldmx-${LDMX_TAG}/include ); do
     mkdir -p /buildroot/ldmx-git/$d
@@ -133,7 +160,7 @@ Stage: deploy
   exec fire "$@"
 %labels
   Description LDMX Software Singularity Image
-  Maintainer Andrii Salnikov <andrii.salnikov@hep.lu.se>
+  Maintainer Andrii Salnikov <andrii.salnikov@hep.lu.se>, Geoffrey Mullier <geoffrey.mullier@hep.lu.se>
 
 %help
    LDMX Software Singularity Image. 
@@ -142,7 +169,7 @@ Stage: deploy
      singularity run ldmx_<version>.sif Script.py
    or
      #./ldmx_<version>.sif run.mac
-     ./ldmx_<version>.sif run.mac
+      ./ldmx_<version>.sif Script.py
      
    For other commands use singularity exec: 
      #singularity exec ldmx_<version>.sif ldmx-app <options>
