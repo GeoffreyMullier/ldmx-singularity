@@ -6,24 +6,33 @@ for sources in the `src/` directory:
 `cd src/`
 `./checkout.sh`
 
-2. Define versions
+1. Define versions
 In the `ldmx.buildvers` file you can define a different versions of LDMX and dependencies that are used.
 Following is a description of the available options:
-*CENTOS=7 - defines the CentOS version. Please note that at the time of writing only CentOS 7
+
+   * CENTOS=7 - defines the CentOS version. Please note that at the time of writing only CentOS 7
 builds are fully tested.
-*DEVTOOLSET=7 - defines the devloolset version to install. The value ‘S’ means system compilers
+
+   * DEVTOOLSET=7 - defines the devloolset version to install. The value ‘S’ means system compilers
 usage without installing particular devtoolset pack. If you are not familiar with CetnOS devtools sets,
 you can interpret the number as GCC major version. 6, 7 and 8 are those you can try.
-*CMAKE_VER=3.13.5 - version of CMake. According to our experience the LDMX software and
+
+   * CMAKE_VER=3.13.5 - version of CMake. According to our experience the LDMX software and
 dependencies are very sensitive to CMake version. Do not change it if you do not have real
 reasons.
-*XERCES_VER=3.2.3 - version of Xerces-C. The latest and recommended is 3.2.2.
-*ROOTVERSION=6.20.04 - version of Root to build.
-*GEANT4_TAG=LDMX.10.2.3_v0.3 - Tag of LDMX-forked Geant4 source tree to build
-*LDMX_TAG=v2.0.0 - Tag of LDMX software to build
-*MAKEOPTS=-j8 - Additional options to pass to make command. Using -j&lt;number of cores&gt; is
+
+   * XERCES_VER=3.2.3 - version of Xerces-C. The latest and recommended is 3.2.2.
+
+   * ROOTVERSION=6.20.04 - version of Root to build.
+
+   * GEANT4_TAG=LDMX.10.2.3_v0.3 - Tag of LDMX-forked Geant4 source tree to build
+
+   * LDMX_TAG=v2.0.0 - Tag of LDMX software to build
+
+   * MAKEOPTS=-j8 - Additional options to pass to make command. Using -j&lt;number of cores&gt; is
 recommended to speed-up build process.
-*MARCH=sandybridge - Optionally define instructions set optimization for the machine CPU type (e.g
+
+   * MARCH=sandybridge - Optionally define instructions set optimization for the machine CPU type (e.g
 -march= CFLAG). It can improve performance but limit the portability. If not defined, general release
 compiler flags will be used.
 
