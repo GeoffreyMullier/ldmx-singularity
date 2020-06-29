@@ -1,0 +1,150 @@
+Bootstrap: localimage
+From: ldmx-buildenv.sif
+Stage: buildldmx
+
+%setup
+  # local LDMX sources
+  cp -a src/ldmx-git ${SINGULARITY_ROOTFS}/src/ldmx-git
+  # local MagFieldMap instead of buildtime checkout
+  cp -a src/MagFieldMap ${SINGULARITY_ROOTFS}/src/ldmx-git/
+  sed '/git submodule/s/^/#/' -i ${SINGULARITY_ROOTFS}/src/ldmx-git/cmake/Scripts/InstallMagFieldMap.cmake
+  # versions
+  cp -f ldmx.buildvers ${SINGULARITY_ROOTFS}/etc
+
+%post
+  source /etc/ldmx.buildvers
+
+  if [ -n "$MARCH" ]; then
+    export CFLAGS="-march=$MARCH"
+    export CXXFLAGS="-march=$MARCH"
+  fi
+
+  if [ "$DEVTOOLSET" != "S" ]; then
+    source /opt/rh/devtoolset-${DEVTOOLSET}/enable
+  fi
+
+  export XERCESC_DIR=/opt/xerces-c-$XERCES_VER
+  export G4DIR=/opt/geant4-$GEANT4_TAG
+  export ROOTDIR=/opt/root-$ROOTVERSION
+
+  cd /buildroot
+
+  # Build LDMX
+  yum -y install boost-devel numpy scipy python-pip
+  pip install xgboost==0.82
+  mv /src/ldmx-git .
+  cd ldmx-git
+  #git checkout master
+  git checkout tags/$LDMX_TAG -b $LDMX_TAG
+  # fix Config and Detectors install
+  #mkdir Configuration/{include,src}
+  #mkdir Detectors/{include,src}
+  # build
+  mkdir build
+  cd build
+  source /opt/root-$ROOTVERSION/bin/thisroot.sh
+  export LDMXDIR=/opt/ldmx-$LDMX_TAG
+  cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=/usr/bin/python -DROOT_DIR=$ROOTDIR -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
+  make $MAKEOPTS
+  make install
+  # add marcros examples to install tree
+  # cp -a ../SimApplication/macros $LDMXDIR/data/
+  cd /buildroot
+
+  # define environment
+  LDMX_ENV_FILE=/etc/ldmxenv.sh
+  if [ "$DEVTOOLSET" != "S" ]; then
+    echo "source /opt/rh/devtoolset-$DEVTOOLSET/enable" >> $LDMX_ENV_FILE
+  fi
+  echo "export LDMXSW_DIR=$LDMXDIR" >> $LDMX_ENV_FILE
+  echo "source $G4DIR/bin/geant4.sh" >> $LDMX_ENV_FILE
+  echo "source $ROOTDIR/bin/thisroot.sh" >> $LDMX_ENV_FILE
+  echo "export LD_LIBRARY_PATH=\$LDMXSW_DIR/lib:$XERCESC_DIR/lib:\$LD_LIBRARY_PATH" >> $LDMX_ENV_FILE
+  echo "export PYTHONPATH=\$LDMXSW_DIR/lib/python:\$PYTHONPATH" >> $LDMX_ENV_FILE
+  echo "export PATH=\$LDMXSW_DIR/bin:\$PATH" >> $LDMX_ENV_FILE
+
+  # cleanup (cmake files that prevent copy)
+  rm -rf $G4DIR/lib64/Geant4*
+  
+%environment
+  source /etc/ldmxenv.sh
+
+Bootstrap: localimage
+From: centos.sif
+Stage: deploy
+
+%files from buildldmx
+  /etc/ldmx.buildvers
+  /etc/ldmxenv.sh
+  /opt/xerces* /opt/
+  /opt/geant4* /opt/
+  /opt/root* /opt/
+  /opt/ldmx* /opt/
+
+%post
+  source /etc/ldmx.buildvers
+  yum -y install epel-release vim-enhanced
+  if [ "$DEVTOOLSET" != "S" ]; then
+    # complete gcc toolset is needed for runtime compilations
+    yum -y install centos-release-scl-rh
+    yum -y install devtoolset-${DEVTOOLSET}-runtime devtoolset-${DEVTOOLSET}-gcc devtoolset-${DEVTOOLSET}-gcc-c++
+  else
+    yum -y install gcc gcc-c++
+  fi
+  # libs
+  yum -y install openssl libX11 libXmu mesa-libGL mesa-libGLU mesa-libGLw libXpm libXft libXext gsl libglvnd-opengl fftw blas boost
+  # extra python
+  yum -y install numpy scipy python-pip
+  pip install xgboost==0.82
+  # satisfy ldmx buildroot hardcode for runtime includes
+  for d in $( ls -1 /opt/ldmx-${LDMX_TAG}/include ); do
+    mkdir -p /buildroot/ldmx-git/$d
+    ln -s /opt/ldmx-${LDMX_TAG}/include /buildroot/ldmx-git/$d/
+  done
+
+%environment
+  export MALLOC_CHECK_=0
+  source /etc/ldmxenv.sh
+
+#test
+  source /etc/ldmxenv.sh
+#  TESTDIR=$( mktemp -d -p . -t ldmx.test.XXXXXX )
+#  cd $TESTDIR
+#  cp $LDMXSW_DIR/data/detectors/ldmx-det-full-v3-fieldmap-magnet/* .
+#  cp $LDMXSW_DIR/data/fieldmap/* .
+#  echo "/persistency/gdml/read detector.gdml" > run.mac
+#  echo "/run/initialize" >> run.mac
+#  echo "/gun/particle e-" >> run.mac
+#  echo "/gun/energy 4 GeV" >> run.mac
+#  echo "/gun/position -27.926 5 -700 mm" >> run.mac
+#  echo "/gun/direction 0.3138 0 3.9877 GeV" >> run.mac
+#  echo "/run/beamOn 1000" >> run.mac
+#  ldmx-sim run.mac
+#  if [ -f "ldmx_sim_events.root" ]; then
+#    echo "LDMX test simulation completed."
+#  else
+#    echo "LDMX test simulation failed."
+#  fi
+#  cd - >/dev/null 2>&1
+#  rm -rf $TESTDIR
+
+%runscript
+  #exec ldmx-app "$@"
+  exec fire "$@"
+%labels
+  Description LDMX Software Singularity Image
+  Maintainer Andrii Salnikov <andrii.salnikov@hep.lu.se>
+
+%help
+   LDMX Software Singularity Image. 
+   The ldmx-sim command is run by default, e.g.
+     #singularity run ldmx_<version>.sif run.mac
+     singularity run ldmx_<version>.sif Script.py
+   or
+     #./ldmx_<version>.sif run.mac
+     ./ldmx_<version>.sif run.mac
+     
+   For other commands use singularity exec: 
+     #singularity exec ldmx_<version>.sif ldmx-app <options>
+     singularity exec ldmx_<version>.sif fire <options>
+

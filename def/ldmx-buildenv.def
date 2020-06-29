@@ -1,0 +1,106 @@
+Bootstrap: localimage
+From: centos.sif
+Stage: build
+
+%setup
+  mkdir ${SINGULARITY_ROOTFS}/src/
+  # local LDMX-patched GEANT4 sources
+  cp -a src/ldmx-geant4 ${SINGULARITY_ROOTFS}/src/ldmx-geant4
+  # versions
+  cp ldmx.buildvers ${SINGULARITY_ROOTFS}/etc
+
+%post
+  source /etc/ldmx.buildvers
+
+  yum -y install @development
+  yum -y install wget openssl-devel epel-release
+
+  # devtoolset
+  if [ "${DEVTOOLSET}" != "S" ]; then
+    yum -y install centos-release-scl-rh
+    yum -y install devtoolset-${DEVTOOLSET}-gcc devtoolset-${DEVTOOLSET}-gcc-c++
+    source /opt/rh/devtoolset-${DEVTOOLSET}/enable
+  fi
+
+  mkdir /buildroot
+  cd /buildroot
+
+  # New CMake is needed
+  wget https://cmake.org/files/v${CMAKE_VER%.*}/cmake-${CMAKE_VER}.tar.gz
+  tar zxvf cmake-$CMAKE_VER.tar.gz
+  cd cmake-$CMAKE_VER
+  ./bootstrap --prefix=/usr/local
+  make $MAKEOPTS
+  make install
+  cd /buildroot
+
+  # processor optimization flags
+  if [ -n "$MARCH" ]; then
+    export CFLAGS="-march=$MARCH"
+    export CXXFLAGS="-march=$MARCH"
+  fi
+
+  # Build xerces
+  wget https://downloads.apache.org/xerces/c/3/sources/xerces-c-${XERCES_VER}.tar.bz2
+  tar -jxvf xerces-c-${XERCES_VER}.tar.bz2
+  export XERCESC_DIR=/opt/xerces-c-$XERCES_VER
+  cd xerces-c-${XERCES_VER}
+  ./configure --prefix=$XERCESC_DIR
+  make $MAKEOPTS
+  make install
+  cd /buildroot
+
+  # Build GEANT-4
+  yum -y install libX11-devel libXmu-devel mesa-libGL-devel mesa-libGLU-devel mesa-libGLw-devel 
+  # LDMX uses a custom version of Geant4 that includes modifications to the range 
+  # in which the Bertini Cascade model
+  mv /src/ldmx-geant4 .
+  cd ldmx-geant4
+  git checkout tags/$GEANT4_TAG -b $GEANT4_TAG
+  mkdir build
+  cd build
+  export G4DIR=/opt/geant4-$GEANT4_TAG
+  cmake -DGEANT4_USE_GDML=ON -DGEANT4_INSTALL_DATA=ON -DXERCESC_ROOT_DIR=$XERCESC_DIR \
+    -DGEANT4_USE_OPENGL_X11=ON -DCMAKE_INSTALL_PREFIX=$G4DIR -DGEANT4_USE_SYSTEM_EXPAT=OFF ..
+  make $MAKEOPTS
+  make install
+  cd /buildroot
+
+  # Build ROOT
+  PYDEVPKG=python-devel
+  PYCMAKEFLAGS="-DPYTHON_EXECUTABLE=/usr/bin/python"
+  PYBASE=
+  if [ "$CENTOS" == 8 ]; then
+    PYBASE=3
+    PYDEVPKG="python36-devel"
+    PYCMAKEFLAGS="-Dpython3=ON -DPYTHON_EXECUTABLE=/usr/bin/python3 -DPYTHON_INCLUDE_DIR=/usr/include/python3.6m/ -DPYTHON_LIBRARY=/usr/lib64/python3.6"
+  fi
+  yum -y install libXpm-devel libXft-devel libXext-devel gsl-devel fftw-devel blas-devel ${PYDEVPKG} python${PYBASE}-scipy
+  wget https://root.cern.ch/download/root_v$ROOTVERSION.source.tar.gz
+  tar -zxvf root_v$ROOTVERSION.source.tar.gz
+  mkdir root-cmake-build
+  cd root-cmake-build
+  export ROOTDIR=/opt/root-$ROOTVERSION
+  cmake -Dgdml=ON -Dexplicitlink=ON ${PYCMAKEFLAGS} -DCMAKE_INSTALL_PREFIX=$ROOTDIR -Dcxx17=ON ../root-$ROOTVERSION
+  make $MAKEOPTS
+  make install
+  cd /buildroot
+
+  # define environment
+  if [ "$DEVTOOLSET" != "S" ]; then
+    echo "source /opt/rh/devtoolset-$DEVTOOLSET/enable" >> $SINGULARITY_ENVIRONMENT
+  fi
+  echo "export ROOTDIR=/opt/root-$ROOTVERSION" >> $SINGULARITY_ENVIRONMENT
+  echo "export G4DIR=/opt/geant4-$GEANT4_TAG" >> $SINGULARITY_ENVIRONMENT
+  echo "export XERCESC_DIR=/opt/xerces-c-$XERCES_VER" >> $SINGULARITY_ENVIRONMENT
+  
+%labels
+  Description Singularity Image with build environment for LDMX software
+  Maintainer Andrii Salnikov <andrii.salnikov@hep.lu.se>
+
+%help
+   Singularity Image with build environment for LDMX software.
+   It contains pre-built Xerces-C, Geant4 (patched LDMX version) and ROOT.
+
+   LDMX software can be build based on this image.
+

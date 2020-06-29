@@ -1,0 +1,8 @@
+Bootstrap: yum
+OSVersion: 8
+MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/BaseOS/$basearch/os
+Include: yum
+
+%post
+  sed '/enabled/s/.*/enabled=1/' -i /etc/yum.repos.d/CentOS-PowerTools.repo
+
