@@ -9,7 +9,14 @@ for sources in the `src/` directory:
 1. Define versions
 In the `ldmx.buildvers` file you can define a different versions of LDMX and dependencies that are used.
 Following is a description of the available options:
+   * BOOST_VER=1.73.0 - Defines the boost version, currently it is broken and the build process doesn't work
+   
+   * PYTHON_VER=3.8.0 - Defines Python version, downloads the correct version and compiles with shared libraries (currently not fully tested since needs a compiled from source python version to compile boost)
 
+   * ONNX_VER=1.3.0 - Defines version of ONNX libraries, download the binaries without compiling them
+   
+   * ONNX_GPU=OFF - ON/OFF, Defines if the version of ONNX should be a GPU one (the ones available offer CUDA support) to run with the container need to use the -nv experimental option for CUDA support
+   
    * CENTOS=7 - defines the CentOS version. Please note that at the time of writing only CentOS 7
 builds are fully tested.
 
@@ -27,7 +34,7 @@ reasons.
 
    * GEANT4_TAG=LDMX.10.2.3_v0.3 - Tag of LDMX-forked Geant4 source tree to build
 
-   * LDMX_TAG=v2.0.0 - Tag of LDMX software to build
+   * LDMX_TAG=v2.0.0 - Tag of LDMX software to build, using latest gets the latest master 
 
    * MAKEOPTS=-j8 - Additional options to pass to make command. Using -j&lt;number of cores&gt; is
 recommended to speed-up build process.
