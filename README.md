@@ -28,7 +28,7 @@ you can interpret the number as GCC major version. 6, 7 and 8 are those you can 
 dependencies are very sensitive to CMake version. Do not change it if you do not have real
 reasons.
 
-   * XERCES_VER=3.2.3 - version of Xerces-C. The latest and recommended is 3.2.2.
+   * XERCES_VER=3.2.3 - version of Xerces-C. The latest and recommended is 3.2.3.
 
    * ROOTVERSION=6.20.04 - version of Root to build.
 
@@ -43,7 +43,7 @@ recommended to speed-up build process.
 -march= CFLAG). It can improve performance but limit the portability. If not defined, general release
 compiler flags will be used.
 
-## Building a dev version
+## Building a dev version (Currently not working)
 
 Run build process `build-dev.sh` script will start the build process.
 This will generate a Sandbox singularity image with all dependencies build 
@@ -56,7 +56,7 @@ In order to run the sandbox use
 
 To be completed...
 
-## Building a prod version
+## Building a prod version (Supposedly currently working for V2.0.0, though has still non prod things in there)
 
 The `build-prod.sh` script will start the build process. First, it will generate intermediate singularity image with all dependencies build (except LDMX software itself). In case intermediate build image is already present in the working directory it will not be rebuilt again next time. This allows to update LDMX software with the same dependencies with much less efforts. The next step is to build the LDMX software and produce the “release” image that only contains runtime dependencies without build leftovers (like sources and build files). This release image should be used to run simulations.
 
