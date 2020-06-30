@@ -43,6 +43,10 @@ Stage: buildldmx
   pip install uproot
   mv /src/ldmx-git .
   cd ldmx-git
+  #SHAREGEX="\b[0-9a-f]{5,40}\b"
+  #[[ $LDMX_TAG =~ $SHAREGEX ]]
+  #if [ -z ${BASH_REMATCH[0]} ]; then
+  #git checkout $LDMX_TAG -b ldmx-build
   if [ "$LDMX_TAG" != "latest" ]; then
   git checkout tags/$LDMX_TAG -b $LDMX_TAG
   else
