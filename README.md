@@ -35,7 +35,7 @@ Following is a description of the available options:
 
    * MARCH=sandybridge - Optionally define instructions set optimization for the machine CPU type (e.g -march= CFLAG). It can improve performance but limit the portability. If not defined, general release compiler flags will be used.
 
-## Building a dev version (Currently not working)
+## Building a dev version (Currently working with caveats)
 
 Run build process `build-dev.sh` script will start the build process.
 This will generate a Sandbox singularity image with all dependencies build 
@@ -45,6 +45,8 @@ Change the ownership of the container to be the current user by `chown -R $(id -
 In order to run the sandbox use 
 
 `singularity shell -w ldmx-dev-test`
+
+Some sample scripts will be available in the container under /home for easy first setup
 
 To be completed...
 
