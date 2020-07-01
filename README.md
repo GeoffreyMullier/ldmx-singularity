@@ -31,7 +31,7 @@ Following is a description of the available options:
 
    * LDMX_TAG=v2.0.0 - Tag of LDMX software to build, using latest gets the latest master
 
-   * MAKEOPTS=-j8 - Additional options to pass to make command. Using -j #number-of-cores& is recommended to speed-up build process.
+   * MAKEOPTS=-j8 - Additional options to pass to make command. Using -j #number-of-cores is recommended to speed-up build process.
 
    * MARCH=sandybridge - Optionally define instructions set optimization for the machine CPU type (e.g -march= CFLAG). It can improve performance but limit the portability. If not defined, general release compiler flags will be used.
 
