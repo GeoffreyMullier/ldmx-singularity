@@ -9,39 +9,31 @@ for sources in the `src/` directory:
 1. Define versions
 In the `ldmx.buildvers` file you can define a different versions of LDMX and dependencies that are used.
 Following is a description of the available options:
-   * BOOST_VER=1.73.0 - Defines the boost version, currently it is broken and the build process doesn't work
+   * BOOST_VER=1.73.0 - Defines the boost version, builds most of the dependencies, against the selected python version (not tested fully currently)
    
-   * PYTHON_VER=3.8.0 - Defines Python version, downloads the correct version and compiles with shared libraries (currently not fully tested since needs a compiled from source python version to compile boost)
+   * PYTHON_VER=3.8.0 - Defines Python version, downloads the correct version and compiles with shared libraries (Currently not fully tested)
 
    * ONNX_VER=1.3.0 - Defines version of ONNX libraries, download the binaries without compiling them
    
-   * ONNX_GPU=OFF - ON/OFF, Defines if the version of ONNX should be a GPU one (the ones available offer CUDA support) to run with the container need to use the -nv experimental option for CUDA support
+   * ONNX_GPU=OFF - ON/OFF, Defines if the version of ONNX should be a GPU one (the ones available offer CUDA support) to run with the container need to use the -nv experimental option for CUDA support, CUDA support was not tested at this time
    
-   * CENTOS=7 - defines the CentOS version. Please note that at the time of writing only CentOS 7
-builds are fully tested.
+   * CENTOS=7 - defines the CentOS version. Currently only CentOS 7 builds are considered.
 
-   * DEVTOOLSET=7 - defines the devloolset version to install. The value ‘S’ means system compilers
-usage without installing particular devtoolset pack. If you are not familiar with CetnOS devtools sets,
-you can interpret the number as GCC major version. 6, 7 and 8 are those you can try.
+   * DEVTOOLSET=7 - defines the devloolset version to install. The value ‘S’ means system compilers usage without installing particular devtoolset pack. If you are not familiar with CetnOS devtools sets, you can interpret the number as GCC major version. 6, 7 and 8 are those you can try.
 
-   * CMAKE_VER=3.13.5 - version of CMake. According to our experience the LDMX software and
-dependencies are very sensitive to CMake version. Do not change it if you do not have real
-reasons.
+   * CMAKE_VER=3.17.3 - version of CMake. According to our experience the LDMX software and dependencies are very sensitive to CMake version. Do not change it if you do not have real reasons.
 
    * XERCES_VER=3.2.3 - version of Xerces-C. The latest and recommended is 3.2.3.
 
-   * ROOTVERSION=6.20.04 - version of Root to build.
+   * ROOTVERSION=6.20.04 - version of Root to build. Not all optional dependencies are build, can be on request
 
    * GEANT4_TAG=LDMX.10.2.3_v0.3 - Tag of LDMX-forked Geant4 source tree to build
 
-   * LDMX_TAG=v2.0.0 - Tag of LDMX software to build, using latest gets the latest master 
+   * LDMX_TAG=v2.0.0 - Tag of LDMX software to build, using latest gets the latest master
 
-   * MAKEOPTS=-j8 - Additional options to pass to make command. Using -j&lt;number of cores&gt; is
-recommended to speed-up build process.
+   * MAKEOPTS=-j8 - Additional options to pass to make command. Using -j #number-of-cores& is recommended to speed-up build process.
 
-   * MARCH=sandybridge - Optionally define instructions set optimization for the machine CPU type (e.g
--march= CFLAG). It can improve performance but limit the portability. If not defined, general release
-compiler flags will be used.
+   * MARCH=sandybridge - Optionally define instructions set optimization for the machine CPU type (e.g -march= CFLAG). It can improve performance but limit the portability. If not defined, general release compiler flags will be used.
 
 ## Building a dev version (Currently not working)
 
