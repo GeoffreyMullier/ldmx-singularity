@@ -19,7 +19,7 @@ Stage: build
   yum -y install vim
   yum -y install mesa-libGLw-devel.x86_64
   yum -y install emacs
-
+  yum -y install gdbm-devel tk-devel xz-devel sqlite-devel readline-devel bzip2-devel ncurses-devel zlib=devel libffi-devel
 
   # devtoolset
   if [ "${DEVTOOLSET}" != "S" ]; then
@@ -28,17 +28,37 @@ Stage: build
     source /opt/rh/devtoolset-${DEVTOOLSET}/enable
   fi
 
-  yum -y install rh-python36
-  yum -y install rh-python36-numpy rh-python36-scipy rh-python36-python-tools rh-python36-python-six rh-python36-PyYAML
-  source /opt/rh/rh-python36/enable
-  pip install uproot
-  pip install lz4
-  pip install xxhash
-  pip install requests
-  pip install pandas
-
   mkdir /buildroot
   cd /buildroot
+
+   ##Make Python
+
+   wget --no-check-certificate https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
+   tar -xzvf Python-${PYTHON_VER}.tgz
+   PYTHON_VER_SHORT=${PYTHON_VER:0:3};
+   PYTHON_VER_SHORTER=${PYTHON_VER:0:1};
+   PYTHON_DIR=/opt/python${PYTHON_VER_SHORT}
+
+   cd Python-${PYTHON_VER}/
+   ./configure --prefix=/opt/python${PYTHON_VER_SHORT} --enable-optimizations --with-ensurepip=install --with-cxx-main=gcc --enable-shared
+   
+   make $MAKEOPTS && make install
+   cd /buildroot
+
+  export PATH=${PYTHON_DIR}/bin:$PATH
+  export LD_LIBRARY_PATH=${PYTHON_DIR}/lib:$LD_LIBRARY_PATH
+
+  pip3 install numpy
+  pip3 install scipy
+  pip3 install six
+  pip3 install uproot
+  pip3 install lz4
+  pip3 install zstd
+  pip3 install xxhash
+  ##pip3 install xrootd
+  pip3 install xgboost
+  pip3 install requests
+  pip3 install pandas 
 
   # New CMake is needed
   wget https://cmake.org/files/v${CMAKE_VER%.*}/cmake-${CMAKE_VER}.tar.gz
@@ -54,6 +74,16 @@ Stage: build
     export CFLAGS="-march=$MARCH"
     export CXXFLAGS="-march=$MARCH"
   fi
+
+ # Build Boost
+  wget https://dl.bintray.com/boostorg/release/${BOOST_VER}/source/boost_${BOOST_VER//[.]/_}.tar.bz2
+  tar -jxvf boost_${BOOST_VER//[.]/_}.tar.bz2
+  export BOOST_DIR=/opt/boost-${BOOST_VER//[.]/_}
+  cd boost_${BOOST_VER//[.]/_}
+  ./bootstrap.sh --prefix=$BOOST_DIR --with-python=${PYTHON_DIR}/bin/python${PYTHON_VER_SHORTER} --with-python-version=${PYTHON_VER_SHORT} --with-python-root=${PYTHON_DIR}
+
+  ./b2 $MAKEOPTS --enable-unicode=ucs4 install --prefix=$BOOST_DIR --with=all
+  cd /buildroot
 
   # Build xerces
   wget https://downloads.apache.org/xerces/c/3/sources/xerces-c-${XERCES_VER}.tar.bz2
@@ -82,11 +112,7 @@ Stage: build
   cd /buildroot
 
   # Build ROOT
-  ##PYDEVPKG=python-devel
-  #PYDEVPKG=python-devel
-  #PYCMAKEFLAGS="-Dpython3=ON -DPYTHON_EXECUTABLE=/opt/rh/rh-python36/root/usr/bin/python3.6 -DPYTHON_INCLUDE_DIR=/opt/rh/rh-python36/root/usr/include/python3.6m/ -DPYTHON_LIBRARY=/opt/rh/rh-python36/root/usr/lib64/python3.6m.so"
-  PYCMAKEFLAGS="-Dpython3=ON"
-  #PYCMAKEFLAGS="-Dpython3=ON -DPYTHON_EXECUTABLE=/opt/rh/rhpython36/root/usr/bin/python"  
+  PYCMAKEFLAGS="-Dpython3=ON -DPYTHON_EXECUTABLE=${PYTHON_DIR}/bin/python${PYTHON_VER_SHORTER} -DPYTHON_INCLUDE_DIR=${PYTHON_DIR}/include/python${PYTHON_VER_SHORT}/ -DPYTHON_LIBRARY=${PYTHON_DIR}/lib/libpython3.so"
   PYBASE=
   if [ "$CENTOS" == 8 ]; then
     PYBASE=3
@@ -94,7 +120,6 @@ Stage: build
     PYCMAKEFLAGS="-Dpython3=ON -DPYTHON_EXECUTABLE=/usr/bin/python3 -DPYTHON_INCLUDE_DIR=/usr/include/python3.6m/ -DPYTHON_LIBRARY=/usr/lib64/python3.6"
   fi
   yum -y install libXpm-devel libXft-devel libXext-devel gsl-devel fftw-devel blas-devel
-  # ${PYDEVPKG} python${PYBASE}-scipy
   wget https://root.cern.ch/download/root_v$ROOTVERSION.source.tar.gz
   tar -zxvf root_v$ROOTVERSION.source.tar.gz
   mkdir root-cmake-build
@@ -124,10 +149,13 @@ Stage: build
   if [ "$DEVTOOLSET" != "S" ]; then
     echo "source /opt/rh/devtoolset-$DEVTOOLSET/enable" >> $SINGULARITY_ENVIRONMENT
   fi
-  echo "source /opt/rh/rh-python36/enable" >> $SINGULARITY_ENVIRONMENT
+  echo "export PATH=${PYTHON_DIR}/bin:$PATH" >> $SINGULARITY_ENVIRONMENT
+  echo "export LD_LIBRARY_PATH=${PYTHON_DIR}/lib:$LD_LIBRARY_PATH" >> $SINGULARITY_ENVIRONMENT
   echo "export ROOTDIR=/opt/root-$ROOTVERSION" >> $SINGULARITY_ENVIRONMENT
   echo "export G4DIR=/opt/geant4-$GEANT4_TAG" >> $SINGULARITY_ENVIRONMENT
   echo "export XERCESC_DIR=/opt/xerces-c-$XERCES_VER" >> $SINGULARITY_ENVIRONMENT
+  echo "export LD_LIBRARY_PATH=${BOOST_DIR}/lib:$LD_LIBRARY_PATH" >> $SINGULARITY_ENVIRONMENT
+  echo "export BOOST_DIR=/opt/boost-${BOOST_VER//[.]/_}" >> $SINGULARITY_ENVIRONMENT
   if [ ${ONNX_GPU} == "ON" ]; then
   echo "export ONNX_DIR=/opt/onnxruntime-linux-x64-gpu-$ONNX_VER" >> $SINGULARITY_ENVIRONMENT
   fi

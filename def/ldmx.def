@@ -6,8 +6,8 @@ Stage: buildldmx
   # local LDMX sources
   cp -a src/ldmx-git ${SINGULARITY_ROOTFS}/src/ldmx-git
   # local MagFieldMap instead of buildtime checkout
-  cp -a src/MagFieldMap ${SINGULARITY_ROOTFS}/src/ldmx-git/
-  sed '/git submodule/s/^/#/' -i ${SINGULARITY_ROOTFS}/src/ldmx-git/cmake/Scripts/InstallMagFieldMap.cmake
+  #cp -a src/MagFieldMap ${SINGULARITY_ROOTFS}/src/ldmx-git/
+  #sed '/git submodule/s/^/#/' -i ${SINGULARITY_ROOTFS}/src/ldmx-git/cmake/Scripts/InstallMagFieldMap.cmake
   # versions
   cp -f ldmx.buildvers ${SINGULARITY_ROOTFS}/etc
 
@@ -27,6 +27,15 @@ Stage: buildldmx
   export XERCESC_DIR=/opt/xerces-c-$XERCES_VER
   export G4DIR=/opt/geant4-$GEANT4_TAG
   export ROOTDIR=/opt/root-$ROOTVERSION
+  export PYTHONDIR=/opt/python${PYTHON_VER:0:3}
+  #for python
+  export PATH=$PYTHONDIR/bin:$PATH
+  export LD_LIBRARY_PATH=$PYTHONDIR/lib:$LD_LIBRARY_PATH
+
+  #for boost
+  export BOOSTDIR=/opt/boost-${BOOST_VER//[.]/_}
+  export LD_LIBRARY_PATH=$BOOSTDIR/lib:$LD_LIBRARY_PATH
+
   if [ ${ONNX_GPU} == "ON" ]; then 
   export ONNX_DIR=/opt/onnxruntime-linux-x64-gpu-$ONNX_VER
   fi
@@ -38,9 +47,9 @@ Stage: buildldmx
 
   # Build LDMX
   yum -y install boost-devel
-  source /opt/rh/rh-python36/enable bash
-  pip install xgboost==0.82  
-  pip install uproot
+  #source /opt/rh/rh-python36/enable bash
+  pip3 install xgboost  
+  pip3 install uproot
   mv /src/ldmx-git .
   cd ldmx-git
   #SHAREGEX="\b[0-9a-f]{5,40}\b"
@@ -61,7 +70,8 @@ Stage: buildldmx
   source /opt/root-$ROOTVERSION/bin/thisroot.sh
   export LDMXDIR=/opt/ldmx-$LDMX_TAG
   #cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=/usr/bin/python -DROOT_DIR=$ROOTDIR -DONNXRUNTIME_ROOT=$ONNX_DIR -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
-  cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=/opt/rh/rh-python36/root/usr/bin/python -DROOT_DIR=$ROOTDIR -DONNXRUNTIME_ROOT=$ONNX_DIR -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
+  #cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=/opt/rh/rh-python36/root/usr/bin/python -DROOT_DIR=$ROOTDIR -DONNXRUNTIME_ROOT=$ONNX_DIR -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
+  cmake -DGeant4_DIR=$G4DIR -DXercesC_DIR=$XERCESC_DIR -DXercesC_INCLUDE_DIR=$XERCESC_DIR/include -DPYTHON_EXECUTABLE=$PYTHONDIR/bin/python3 -DROOT_DIR=$ROOTDIR -DONNXRUNTIME_ROOT=$ONNX_DIR  -DCMAKE_INSTALL_PREFIX=$LDMXDIR ..
   make $MAKEOPTS
   make install
   # add marcros examples to install tree
@@ -73,13 +83,17 @@ Stage: buildldmx
   if [ "$DEVTOOLSET" != "S" ]; then
     echo "source /opt/rh/devtoolset-$DEVTOOLSET/enable" >> $LDMX_ENV_FILE
   fi
-  echo "source /opt/rh/rh-python36/enable" >> $LDMX_ENV_FILE
+  #echo "source /opt/rh/rh-python36/enable" >> $LDMX_ENV_FILE
   echo "export LDMXSW_DIR=$LDMXDIR" >> $LDMX_ENV_FILE
+  echo "export PATH=$LDMXDIR/bin:$PYTHONDIR/bin:$PATH" >> $LDMX_ENV_FILE
   echo "source $G4DIR/bin/geant4.sh" >> $LDMX_ENV_FILE
   echo "source $ROOTDIR/bin/thisroot.sh" >> $LDMX_ENV_FILE
-  echo "export LD_LIBRARY_PATH=\$LDMXSW_DIR/lib:$XERCESC_DIR/lib:$ONNX_DIR/lib:\$LD_LIBRARY_PATH" >> $LDMX_ENV_FILE
-  echo "export PYTHONPATH=\$LDMXSW_DIR/lib/python:\$PYTHONPATH" >> $LDMX_ENV_FILE
-  echo "export PATH=\$LDMXSW_DIR/bin:\$PATH" >> $LDMX_ENV_FILE
+  echo "export LD_LIBRARY_PATH=$LDMXDIR/lib:$XERCESC_DIR/lib:$ONNX_DIR/lib:$PYTHONDIR/lib:$BOOSTDIR/lib:/opt/geant4-${GEANT4_TAG}/lib64:$LD_LIBRARY_PATH" >> $LDMX_ENV_FILE
+  echo "export PYTHONPATH=$LDMXDIR/lib/python:$PYTHONDIR/lib:$PYTHONPATH" >> $LDMX_ENV_FILE
+  #echo "export PATH=$LDMXDIR/bin:$PATH" >> $LDMX_ENV_FILE
+  #echo "export PATH=$PYTHONDIR/bin:$PATH" >> $LDMX_ENV_FILE
+  #echo "export LD_LIBRARY_PATH=$PYTHONDIR/lib:$LD_LIBRARY_PATH" >> $LDMX_ENV_FILE
+  #echo "export LD_LIBRARY_PATH=$BOOSTDIR/lib:$LD_LIBRARY_PATH" >> $LDMX_ENV_FILE
 
   # cleanup (cmake files that prevent copy)
   rm -rf $G4DIR/lib64/Geant4*
@@ -99,6 +113,8 @@ Stage: deploy
   /opt/root* /opt/
   /opt/onnxruntime* /opt/
   /opt/ldmx* /opt/
+  /opt/python* /opt/
+  /opt/boost* /opt/
 
 %post
   source /etc/ldmx.buildvers
@@ -113,19 +129,28 @@ Stage: deploy
   # libs
   yum -y install openssl libX11 libXmu mesa-libGL mesa-libGLU mesa-libGLw libXpm libXft libXext gsl libglvnd-opengl fftw blas boost
   # extra python
-  yum -y install rh-python36
-  yum -y install rh-python36-numpy rh-python36-scipy rh-python36-python-tools rh-python36-python-six rh-python36-PyYAML
-  source /opt/rh/rh-python36/enable
-  pip install uproot
-  pip install lz4
-  #pip install zstd
-  pip install xxhash
+  #yum -y install rh-python36
+  #yum -y install rh-python36-numpy rh-python36-scipy rh-python36-python-tools rh-python36-python-six rh-python36-PyYAML
+  #source /opt/rh/rh-python36/enable
+  source /opt/root-${ROOTVERSION}/bin/thisroot.sh
+  source /opt/geant4-${GEANT4_TAG}/bin/geant4.sh
+  export PATH=/opt/python${PYTHON_VER:0:3}/bin:/opt/ldmx${LDMX_TAG}/bin:$PATH
+  export LD_LIBRARY_PATH=/opt/python${PYTHON_VER:0:3}/lib:/opt/boost-${BOOST_VER//[.]/_}/lib:/opt/ldmx${LDMX_TAG}/lib:/opt/geant4-${GEANT4_TAG}/lib64:$LD_LIBRARY_PATH
+  
+  #export LD_LIBRARY_PATH=/opt/boost-${BOOST_VER//[.]/_}/lib:$LD_LIBRARY_PATH
+  #export LD_LIBRARY_PATH=/opt/ldmx${LDMX_TAG}/lib:$LD_LIBRARY_PATH
+  #export PATH=/opt/ldmx${LDMX_TAG}/bin:$PATH
+
+  pip3 install uproot
+  pip3 install lz4
+  pip3 install zstd
+  pip3 install xxhash
   #pip install lzma
   #pip install xrootd
-  pip install requests
-  pip install pandas
+  pip3 install requests
+  pip3 install pandas
   #yum -y install numpy scipy python-pip
-  pip install xgboost==0.82
+  pip3 install xgboost
   #pip install uproot
   # satisfy ldmx buildroot hardcode for runtime includes
   for d in $( ls -1 /opt/ldmx-${LDMX_TAG}/include ); do
