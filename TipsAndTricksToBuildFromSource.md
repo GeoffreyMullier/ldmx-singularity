@@ -90,7 +90,7 @@ There was a bug in previous version of FindPythonInterpreter module of cmake, ca
 ```bash
   export XERCES_VER=3.2.3
   XERCES_VER_SHORT=${XERCES_VER:0:1}
-  wget http://archive.apache.org/dist/xerces/c/${XERCES_VER_SHORT}/sources/xerces-c-${XERCES_VER}.tar.bz2
+  wget https://archive.apache.org/dist/xerces/c/${XERCES_VER_SHORT}/sources/xerces-c-${XERCES_VER}.tar.bz2
   tar -jxvf xerces-c-${XERCES_VER}.tar.bz2
   export XERCESC_DIR=/opt/xerces-c-$XERCES_VER
   cd xerces-c-${XERCES_VER}
