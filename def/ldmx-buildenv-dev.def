@@ -127,7 +127,7 @@ Stage: build
 
   ## Build xerces
   XERCES_VER_SHORT=${XERCES_VER:0:1}
-  wget http://archive.apache.org/dist/xerces/c/${XERCES_VER_SHORT}/sources/xerces-c-${XERCES_VER}.tar.bz2
+  wget https://archive.apache.org/dist/xerces/c/${XERCES_VER_SHORT}/sources/xerces-c-${XERCES_VER}.tar.bz2
   #wget https://downloads.apache.org/xerces/c/3/sources/xerces-c-${XERCES_VER}.tar.bz2
   tar -jxvf xerces-c-${XERCES_VER}.tar.bz2
   export XERCESC_DIR=/opt/xerces-c-$XERCES_VER
