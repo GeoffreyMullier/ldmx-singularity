@@ -33,7 +33,7 @@ I am suspecting that in a case where there is an alternate version of gcc one mi
 N.B. The method I use currently to add the python3 executable and libraries to the global environment PATH and LD_PATH sort of assumes that python3 is not installed on the system, there might be therefore a mismatch between those executables if there is already a system-wide install of python3, one could use the system-wide dev version, but I like it from source.
 
 The commands in raw on CentOS would be something along the lines of
-```
+```bash
    export PYTHON_VER=3.8.0
    wget --no-check-certificate https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
    tar -xzvf Python-${PYTHON_VER}.tgz
@@ -66,7 +66,7 @@ I haven't tried yet to make multi threading and MPI powered ones there is some i
 http://www.linuxfromscratch.org/blfs/view/svn/general/boost.html
 
 
-```
+```bash
   export BOOST_VER=1.73.0
   wget https://dl.bintray.com/boostorg/release/${BOOST_VER}/source/boost_${BOOST_VER//[.]/_}.tar.bz2
   tar -jxvf boost_${BOOST_VER//[.]/_}.tar.bz2
@@ -87,7 +87,7 @@ There was a bug in previous version of FindPythonInterpreter module of cmake, ca
 
 ## Xerces
 
-```
+```bash
   export XERCES_VER=3.2.3
   XERCES_VER_SHORT=${XERCES_VER:0:1}
   wget http://archive.apache.org/dist/xerces/c/${XERCES_VER_SHORT}/sources/xerces-c-${XERCES_VER}.tar.bz2
@@ -108,7 +108,7 @@ Normally if the other dependencies are building normally this should build alrig
 ## ROOT
 
 Normally if the other dependencies are building fine this one shouldn't be an issue, the only thing to consider is if it's build with Python3 to set the options right, in this case one should be careful about their python libraries, includes and executables
-```  
+```bash
   export ROOTVERSION=6.20.04
   PYCMAKEFLAGS="-Dpython3=ON -DPYTHON_EXECUTABLE=${PYTHON_DIR}/bin/python${PYTHON_VER_SHORTER} -DPYTHON_INCLUDE_DIR=${PYTHON_DIR}/include/python${PYTHON_VER_SHORT}/ -DPYTHON_LIBRARY=${PYTHON_DIR}/lib/libpython3.so"
   yum -y install libXpm-devel libXft-devel libXext-devel gsl-devel fftw-devel blas-devel
