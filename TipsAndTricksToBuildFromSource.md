@@ -107,4 +107,15 @@ Normally if the other dependencies are building normally this should build alrig
 
 ## ROOT
 
-Normally if the other dependencies are building fine this one shouldn't be an issue
+Normally if the other dependencies are building fine this one shouldn't be an issue, the only thing to consider is if it's build with Python3 to set the options right, in this case one should be careful about their python libraries, includes and executables
+```  
+  export ROOTVERSION=6.20.04
+  PYCMAKEFLAGS="-Dpython3=ON -DPYTHON_EXECUTABLE=${PYTHON_DIR}/bin/python${PYTHON_VER_SHORTER} -DPYTHON_INCLUDE_DIR=${PYTHON_DIR}/include/python${PYTHON_VER_SHORT}/ -DPYTHON_LIBRARY=${PYTHON_DIR}/lib/libpython3.so"
+  yum -y install libXpm-devel libXft-devel libXext-devel gsl-devel fftw-devel blas-devel
+  wget https://root.cern.ch/download/root_v$ROOTVERSION.source.tar.gz
+  tar -zxvf root_v$ROOTVERSION.source.tar.gz
+  mkdir root-cmake-build
+  cd root-cmake-build
+  export ROOTDIR=/opt/root-$ROOTVERSION
+  cmake -Dgdml=ON -Dexplicitlink=ON ${PYCMAKEFLAGS} -DCMAKE_INSTALL_PREFIX=$ROOTDIR -Dcxx17=ON ../root-$ROOTVERSION
+  make -j8 && make install
