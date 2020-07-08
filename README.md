@@ -3,8 +3,10 @@
 1. Get the sources
 The patched Geant4 sources and LDMX software sources should be obtained from GIT. Build scripts look
 for sources in the `src/` directory:
-`cd src/`
-`./checkout.sh`
+```bash
+cd src/
+source checkout.sh
+```
 
 1. Define versions
 In the `ldmx.buildvers` file you can define a different versions of LDMX and dependencies that are used.
@@ -43,10 +45,18 @@ This will generate a Sandbox singularity image with all dependencies build
 Change the ownership of the container to be the current user by `chown -R $(id -u):$(id -g) ldmx-dev-test` if transfered to another machine some part of the system from the centos machine won't be transfered but the hability to build from inside the container will be preserved.
 
 In order to run the sandbox use 
-
-`singularity shell -w ldmx-dev-test`
+```bash
+singularity shell -w ldmx-dev-test
+```
 
 Some sample scripts will be available in the container under /home for easy first setup
+
+If for whatever reason you need to delete the folder, use the following commands
+```bash
+mkdir DeleteFolder && rsync -a --delete DeleteFolder/ ldmx-dev-test/;
+rm -rf DeleteFolder && rm -rf ldmx-dev-test;
+```
+(add -v to rsync for verbose information on what is being deleted, there are many files it might take a little while but much faster than rm -rf)
 
 To be completed...
 
