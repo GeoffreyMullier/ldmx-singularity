@@ -58,8 +58,10 @@ Stage: buildldmx
   #git checkout $LDMX_TAG -b ldmx-build
   if [ "$LDMX_TAG" != "latest" ]; then
   git checkout tags/$LDMX_TAG -b $LDMX_TAG
+  git submodule update --init --recursive
   else
   git checkout master
+  git submodule update --init --recursive
   fi
   # fix Config and Detectors install
   #mkdir Configuration/{include,src}
