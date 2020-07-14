@@ -60,7 +60,7 @@ rm -rf DeleteFolder && rm -rf ldmx-dev-test;
 
 To be completed...
 
-## Building a prod version (pre-realease s1.0.0 working with v2.1.0-alpha)
+## Building a prod version (realease s1.0.1 working with v2.1.0)
 
 The `build-prod.sh` script will start the build process. First, it will generate intermediate singularity image with all dependencies build (except LDMX software itself). In case intermediate build image is already present in the working directory it will not be rebuilt again next time. This allows to update LDMX software with the same dependencies with much less efforts. The next step is to build the LDMX software and produce the “release” image that only contains runtime dependencies without build leftovers (like sources and build files). This release image should be used to run simulations.
 
